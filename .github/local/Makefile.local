@@ -1,0 +1,32 @@
+UBOOT_PRODUCTS := radxa-cubie-a5e
+
+#
+# Common supporting targets
+#
+
+clean: clean_atf
+
+.PHONY: clean_atf
+clean_atf:
+	$(MAKE) -j$(shell nproc) -C atf clean
+
+atf/build/sun55i_a523/debug/bl31.bin:
+	CFLAGS= $(MAKE) -C atf CROSS_COMPILE=$(CROSS_COMPILE) PLAT=sun55i_a523 DEBUG=1
+
+#
+# Device build targets
+#
+
+.PHONY: radxa-cubie-a5e_defconfig
+radxa-cubie-a5e_defconfig: clean_config
+	$(UMAKE) radxa-a5e_defconfig
+
+.PHONY: radxa-cubie-a5e_build
+radxa-cubie-a5e_build: radxa-cubie-a5e_defconfig atf/build/sun55i_a523/debug/bl31.bin
+	$(UMAKE) BL31=../atf/build/sun55i_a523/debug/bl31.bin
+
+.PHONY: radxa-cubie-a5e
+radxa-cubie-a5e: radxa-cubie-a5e_build
+	mkdir -p out/$@
+	cp src/u-boot-sunxi-with-spl.bin out/$@/
+	cp setup/u-boot_setup-allwinner.sh out/$@/setup.sh

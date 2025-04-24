@@ -1,0 +1,8 @@
+[submodule "src"]
+	path = src
+	url = https://github.com/apritzel/u-boot.git
+	branch = a523-beta
+[submodule "atf"]
+	path = atf
+	url = https://github.com/jernejsk/arm-trusted-firmware.git
+	branch = a523
