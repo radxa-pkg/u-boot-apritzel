@@ -1,20 +1,8 @@
 -include .github/local/Makefile.local
+-include Makefile.extra
+
 PROJECT ?= u-boot-apritzel
-
-UBOOT_FORK ?= boot-apritzel
-ARCH ?= arm
-CROSS_COMPILE ?= aarch64-linux-gnu-
-CUSTOM_ENV_DEFINITIONS ?=
-CUSTOM_MAKE_DEFINITIONS ?=
 CUSTOM_DEBUILD_ENV ?= DEB_BUILD_OPTIONS='parallel=1'
-SUPPORT_CLEAN ?= true
-
-UMAKE ?= $(CUSTOM_ENV_DEFINITIONS) $(MAKE) -C "$(SRC-UBOOT)" -j$(shell nproc) \
-			$(CUSTOM_MAKE_DEFINITIONS) \
-			ARCH=$(ARCH) CROSS_COMPILE=$(CROSS_COMPILE) \
-			UBOOTVERSION=$(shell dpkg-parsechangelog -S Version)-$(UBOOT_FORK)
-
-UBOOT_PRODUCTS ?=
 
 .DEFAULT_GOAL := all
 .PHONY: all
@@ -22,6 +10,7 @@ all: build
 
 .PHONY: devcontainer_setup
 devcontainer_setup:
+	sudo dpkg --add-architecture arm64
 	sudo apt-get update
 	sudo apt-get build-dep . -y
 
@@ -34,19 +23,16 @@ test:
 #
 # Build
 #
-DIR-OUTPUT := out
-SRC-UBOOT := src
-
-$(DIR-OUTPUT):
-	mkdir -p $@
-
 .PHONY: build
-build: $(DIR-OUTPUT) $(SRC-UBOOT) pre_build $(UBOOT_PRODUCTS) post_build
+build: pre_build main_build post_build
 
 .PHONY: pre_build
 pre_build:
 	# Fix file permissions when created from template
 	chmod +x debian/rules
+
+.PHONY: main_build
+main_build:
 
 .PHONY: post_build
 post_build:
@@ -54,28 +40,24 @@ post_build:
 #
 # Clean
 #
-.PHONY: clean_config
-clean_config:
-	rm -f $(SRC-UBOOT)/.config
-
 .PHONY: distclean
 distclean: clean
-	if [ "$(SUPPORT_CLEAN)" == "true" ]; then $(UMAKE) distclean; fi
 
 .PHONY: clean
 clean: clean-deb
-	if [ "$(SUPPORT_CLEAN)" == "true" ]; then $(UMAKE) clean; fi
 
 .PHONY: clean-deb
 clean-deb:
-	rm -rf $(DIR-OUTPUT) debian/.debhelper debian/$(PROJECT)*/ debian/u-boot-*/ debian/tmp/ debian/debhelper-build-stamp debian/files debian/*.debhelper.log debian/*.*.debhelper debian/*.substvars
+	rm -rf debian/.debhelper debian/$(PROJECT)*/ debian/tmp/ debian/debhelper-build-stamp debian/files debian/*.debhelper.log debian/*.*.debhelper debian/*.substvars
 
 #
 # Release
 #
 .PHONY: dch
 dch: debian/changelog
-	EDITOR=true gbp dch --ignore-branch --multimaint-merge --commit --git-log='--no-merges --perl-regexp --invert-grep --grep=^(chore:\stemplates\sgenerated)' --release --dch-opt=--upstream
+	gbp dch --ignore-branch --multimaint-merge --release --spawn-editor=never \
+	--git-log='--no-merges --perl-regexp --invert-grep --grep=^(chore:\stemplates\sgenerated)' \
+	--dch-opt=--upstream --commit --commit-msg="feat: release %(version)s"
 
 .PHONY: deb
 deb: debian
