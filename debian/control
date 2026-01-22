@@ -1,4 +1,4 @@
-Source: u-boot-apritzel
+Source: u-boot-dlan17
 Maintainer: "Radxa Computer Co., Ltd" <dev@radxa.com>
 Section: admin
 Priority: standard
@@ -24,17 +24,17 @@ Build-Depends: debhelper (>=12~),
                lib32z1 [!i386],
                dos2unix,
 
-Package: u-boot-apritzel
+Package: u-boot-dlan17
 Architecture: all
 Section: admin
 Priority: optional
 Depends: ${misc:Depends},
-Description: U-Boot based on boot-apritzel
- This package provides the prebuilt U-Boot based on boot-apritzel.
+Description: U-Boot based on boot-dlan17
+ This package provides the prebuilt U-Boot based on dlan17's fork.
 
 Package: u-boot-radxa-cubie-a5e
 Architecture: all
-Depends: u-boot-apritzel,
+Depends: u-boot-dlan17,
          ${misc:Depends},
 Section: admin
 Priority: optional

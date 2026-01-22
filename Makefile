@@ -5,7 +5,7 @@
 -include .github/local/Makefile.local
 -include Makefile.extra
 
-PROJECT ?= u-boot-apritzel
+PROJECT ?= u-boot-dlan17
 CUSTOM_DEBUILD_ENV ?= DEB_BUILD_OPTIONS='parallel=1'
 CUSTOM_DEBUILD_ARG ?=
 

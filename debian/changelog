@@ -1,3 +1,15 @@
+u-boot-dlan17 (2026.01-1) UNRELEASED; urgency=medium
+
+  [ dependabot[bot] ]
+  * build(deps): bump actions/download-artifact from 4 to 5
+  * build(deps): bump actions/checkout from 4 to 5
+  * build(deps): bump actions/upload-pages-artifact from 3 to 4
+  * build(deps): bump actions/download-artifact from 5 to 6
+  * build(deps): bump actions/checkout from 5 to 6
+  * build(deps): bump actions/upload-artifact from 4 to 6
+
+ -- "Radxa Computer Co., Ltd" <dev@radxa.com>  Thu, 22 Jan 2026 18:33:43 +0800
+
 u-boot-apritzel (2025.04-1) UNRELEASED; urgency=medium
 
   * Add initial Debian packaging support

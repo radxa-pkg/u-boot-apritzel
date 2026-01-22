@@ -2,7 +2,7 @@
 # DO NOT EDIT IT DIRECTLY!
 # Custom rules should be placed in .github/local/Makefile.local
 
-UBOOT_FORK ?= boot-apritzel
+UBOOT_FORK ?= dlan17
 ARCH ?= arm
 CROSS_COMPILE ?= aarch64-linux-gnu-
 CUSTOM_ENV_DEFINITIONS ?=

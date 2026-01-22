@@ -1,9 +1,9 @@
-# u-boot-apritzel
+# u-boot-dlan17
 
-[![Release](https://github.com/radxa-pkg/u-boot-apritzel/actions/workflows/release.yaml/badge.svg)](https://github.com/radxa-pkg/u-boot-apritzel/actions/workflows/release.yaml)
+[![Release](https://github.com/radxa-pkg/u-boot-dlan17/actions/workflows/release.yaml/badge.svg)](https://github.com/radxa-pkg/u-boot-dlan17/actions/workflows/release.yaml)
 
 ## Build
 
-1. `git clone --recurse-submodules https://github.com/radxa-pkg/u-boot-apritzel.git`
+1. `git clone --recurse-submodules https://github.com/radxa-pkg/u-boot-dlan17.git`
 2. Open in [`devcontainer`](https://code.visualstudio.com/docs/devcontainers/containers)
 3. `make deb`
