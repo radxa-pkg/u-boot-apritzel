@@ -1,4 +1,6 @@
-UBOOT_PRODUCTS := radxa-cubie-a5e
+UBOOT_PRODUCTS := radxa-cubie-a5e radxa-cubie-a7s
+
+CUSTOM_DEBUILD_ENV := DEB_BUILD_OPTIONS='parallel=1' DEB_CFLAGS_MAINT_SET= DEB_LDFLAGS_MAINT_SET= DEB_OBJCFLAGS_MAINT_SET=
 
 #
 # Common supporting targets
@@ -10,8 +12,13 @@ clean: clean_atf
 clean_atf:
 	$(MAKE) -j$(shell nproc) -C atf clean
 
-atf/build/sun55i_a523/debug/bl31.bin:
-	CFLAGS= $(MAKE) -C atf CROSS_COMPILE=$(CROSS_COMPILE) PLAT=sun55i_a523 DEBUG=1
+atf/build/%/debug/bl31.bin:
+	$(MAKE) -j$(shell nproc) -C atf CROSS_COMPILE=$(CROSS_COMPILE) PLAT=$* DEBUG=1
+
+src/boot_package-%.fex: awbin/%/boot_package.cfg
+	cat awbin/$*/header-info.bin src/u-boot-sunxi-with-spl.bin > src/u-boot-sunxi-with-spl-with-head.bin
+	cd src/ && ../tools/pack/pctools/linux/openssl/dragonsecboot -pack ../awbin/$*/boot_package.cfg
+	mv src/boot_package.fex $@
 
 #
 # Device build targets
@@ -19,7 +26,7 @@ atf/build/sun55i_a523/debug/bl31.bin:
 
 .PHONY: radxa-cubie-a5e_defconfig
 radxa-cubie-a5e_defconfig: clean_config
-	$(UMAKE) radxa-a5e_defconfig
+	$(UMAKE) radxa-cubie-a5e_defconfig
 
 .PHONY: radxa-cubie-a5e_build
 radxa-cubie-a5e_build: radxa-cubie-a5e_defconfig atf/build/sun55i_a523/debug/bl31.bin
@@ -29,4 +36,21 @@ radxa-cubie-a5e_build: radxa-cubie-a5e_defconfig atf/build/sun55i_a523/debug/bl3
 radxa-cubie-a5e: radxa-cubie-a5e_build
 	mkdir -p out/$@
 	cp src/u-boot-sunxi-with-spl.bin out/$@/
+	cp setup/u-boot_setup-allwinner.sh out/$@/setup.sh
+
+.PHONY: radxa-cubie-a7s_defconfig
+radxa-cubie-a7s_defconfig: clean_config
+	$(UMAKE) radxa-cubie-a7s_defconfig
+
+.PHONY: radxa-cubie-a7s_build
+radxa-cubie-a7s_build: radxa-cubie-a7s_defconfig atf/build/sun60i_a733/debug/bl31.bin
+	$(UMAKE) BL31=../atf/build/sun60i_a733/debug/bl31.bin
+	rm -f src/boot_package-a733.fex
+
+.PHONY: radxa-cubie-a7s
+radxa-cubie-a7s: radxa-cubie-a7s_build src/boot_package-a733.fex
+	mkdir -p out/$@
+	cp awbin/a733/boot0_*.bin out/$@/
+	cp awbin/a733/sys_partition_nor.bin out/$@/
+	cp src/boot_package-a733.fex out/$@/boot_package.fex
 	cp setup/u-boot_setup-allwinner.sh out/$@/setup.sh
