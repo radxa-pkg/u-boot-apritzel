@@ -40,3 +40,21 @@ Section: admin
 Priority: optional
 Description: Radxa U-Boot meta-package for Radxa Cubie A5E.
  This package provides the prebuilt U-Boot for Radxa Cubie A5E.
+
+Package: u-boot-radxa-cubie-a7s
+Architecture: all
+Depends: u-boot-dlan17,
+         ${misc:Depends},
+Section: admin
+Priority: optional
+Description: Radxa U-Boot meta-package for Radxa Cubie A7S.
+ This package provides the prebuilt U-Boot for Radxa Cubie A7S.
+
+Package: u-boot-radxa-a733
+Architecture: all
+Depends: u-boot-dlan17,
+         ${misc:Depends},
+Section: admin
+Priority: optional
+Description: Radxa U-Boot meta-package for Radxa A733 products
+ This package provides the prebuilt U-Boot for Radxa A733 products.
