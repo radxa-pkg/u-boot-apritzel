@@ -1,8 +1,12 @@
 [submodule "src"]
 	path = src
-	url = https://github.com/apritzel/u-boot.git
-	branch = a523-beta
+	url = https://github.com/dlan17/u-boot
+	branch = allwinner/A733/boot
 [submodule "atf"]
 	path = atf
-	url = https://github.com/jernejsk/arm-trusted-firmware.git
-	branch = a523
+	url = https://github.com/dlan17/trusted-firmware-a
+	branch = A733
+[submodule "tools"]
+	path = tools
+	url = https://gitlab.com/tina5.0_aiot/lichee/tools.git
+	branch = product-aiot-stable
