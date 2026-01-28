@@ -17,7 +17,7 @@ atf/build/%/debug/bl31.bin:
 
 src/boot_package-%.fex: awbin/%/boot_package.cfg
 	cat awbin/$*/header-info.bin src/u-boot-sunxi-with-spl.bin > src/u-boot-sunxi-with-spl-with-head.bin
-	cd src/ && ../tools/pack/pctools/linux/openssl/dragonsecboot -pack $(shell basename $<)
+	cd src/ && ../tools/pack/pctools/linux/openssl/dragonsecboot -pack ../awbin/$*/boot_package.cfg
 	mv src/boot_package.fex $@
 
 #
