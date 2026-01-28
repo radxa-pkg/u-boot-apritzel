@@ -15,10 +15,10 @@ clean_atf:
 atf/build/%/debug/bl31.bin:
 	$(MAKE) -j$(shell nproc) -C atf CROSS_COMPILE=$(CROSS_COMPILE) PLAT=$* DEBUG=1
 
-src/boot_package.fex:
-	cat awbin/a733/header-info.bin src/u-boot-sunxi-with-spl.bin > src/u-boot-sunxi-with-spl-with-head.bin
-	cp awbin/a733/boot_package.cfg src/
-	cd src/ && ../tools/pack/pctools/linux/openssl/dragonsecboot -pack ./boot_package.cfg
+src/boot_package-%.fex: awbin/%/boot_package.cfg
+	cat awbin/$*/header-info.bin src/u-boot-sunxi-with-spl.bin > src/u-boot-sunxi-with-spl-with-head.bin
+	cd src/ && ../tools/pack/pctools/linux/openssl/dragonsecboot -pack $(shell basename $<)
+	mv src/boot_package.fex $@
 
 #
 # Device build targets
@@ -45,12 +45,12 @@ radxa-cubie-a7s_defconfig: clean_config
 .PHONY: radxa-cubie-a7s_build
 radxa-cubie-a7s_build: radxa-cubie-a7s_defconfig atf/build/sun60i_a733/debug/bl31.bin
 	$(UMAKE) BL31=../atf/build/sun60i_a733/debug/bl31.bin
-	rm -f src/boot_package.fex
+	rm -f src/boot_package-a733.fex
 
 .PHONY: radxa-cubie-a7s
-radxa-cubie-a7s: radxa-cubie-a7s_build src/boot_package.fex
+radxa-cubie-a7s: radxa-cubie-a7s_build src/boot_package-a733.fex
 	mkdir -p out/$@
 	cp awbin/a733/boot0_*.bin out/$@/
 	cp awbin/a733/sys_partition_nor.bin out/$@/
-	cp src/boot_package.fex out/$@/
+	cp src/boot_package-a733.fex out/$@/boot_package.fex
 	cp setup/u-boot_setup-allwinner.sh out/$@/setup.sh
