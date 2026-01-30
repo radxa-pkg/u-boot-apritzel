@@ -1,0 +1,31 @@
+From 4c1bd09f6bc442c39dbf2079f63c075a07b6416e Mon Sep 17 00:00:00 2001
+From: Jiali Chen <chenjiali@radxa.com>
+Date: Tue, 27 Jan 2026 05:59:44 +0000
+Subject: [PATCH] spl: only a733 use ram as boot device
+
+fixes 05a7993432bcafa42a954624ced388bb9cf01551
+
+Signed-off-by: Jiali Chen <chenjiali@radxa.com>
+---
+ src/arch/arm/mach-sunxi/board.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/src/arch/arm/mach-sunxi/board.c b/src/arch/arm/mach-sunxi/board.c
+index b82acf540f7..ac2b8dae98e 100644
+--- a/src/arch/arm/mach-sunxi/board.c
++++ b/src/arch/arm/mach-sunxi/board.c
+@@ -292,7 +292,10 @@ uint32_t sunxi_get_boot_device(void)
+ {
+ 	int boot_source = sunxi_get_boot_source();
+ 
+-	return BOOT_DEVICE_RAM;
++#ifdef CONFIG_MACH_SUN60I_A733
++		return BOOT_DEVICE_RAM;
++#endif
++
+ 	/*
+ 	 * When booting from the SD card or NAND memory, the "eGON.BT0"
+ 	 * signature is expected to be found in memory at the address 0x0004
+-- 
+2.52.0
+

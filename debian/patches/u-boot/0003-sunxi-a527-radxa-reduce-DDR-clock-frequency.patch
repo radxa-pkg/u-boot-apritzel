@@ -1,0 +1,22 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jiali Chen <chenjiali@radxa.com>
+Date: Tue, 27 Jan 2026 05:59:44 +0000
+Subject: [PATCH] sunxi: a527: radxa: reduce DDR clock frequency
+
+Ensure stable operation of 1GB DDR
+---
+ src/configs/radxa-cubie-a5e_defconfig | 1 +
+ 1 file changed, 1 insertions(+), 0 deletion(-)
+
+diff --git a/src/configs/radxa-cubie-a5e_defconfig b/src/configs/radxa-cubie-a5e_defconfig
+index 9d204ef5548..3dbd64f88ff 100644
+--- a/src/configs/radxa-cubie-a5e_defconfig
++++ b/src/configs/radxa-cubie-a5e_defconfig
+@@ -2,6 +2,7 @@ CONFIG_ARM=y
+ CONFIG_ARCH_SUNXI=y
+ CONFIG_DEFAULT_DEVICE_TREE="allwinner/sun55i-a527-cubie-a5e"
+ CONFIG_SPL=y
++CONFIG_DRAM_CLK=800
+ CONFIG_DRAM_SUNXI_DX_ODT=0x07070707
+ CONFIG_DRAM_SUNXI_DX_DRI=0x0d0d0d0d
+ CONFIG_DRAM_SUNXI_CA_DRI=0x0e0e

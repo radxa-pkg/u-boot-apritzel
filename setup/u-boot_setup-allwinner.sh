@@ -10,11 +10,25 @@ if [[ ! -v ERROR_REQUIRE_TARGET ]]; then
 	readonly ERROR_REQUIRE_TARGET=-5
 fi
 
+build_spinor() {
+	rm -f /tmp/spi.img /tmp/gpt.img
+	truncate -s 8M /tmp/spi.img
+	if [[ -f "$SCRIPT_DIR/boot0_sdcard.bin" ]] && [[ -f "$SCRIPT_DIR/boot0_sdcard.bin" ]] && [[ -f "$SCRIPT_DIR/boot_package.fex" ]]; then
+		dd conv=notrunc,fsync if="$SCRIPT_DIR/boot0_spinor.bin" of=/tmp/spi.img bs=512
+		dd conv=notrunc,fsync if="$SCRIPT_DIR/boot_package.fex" of=/tmp/spi.img bs=512 seek=512
+		dd conv=notrunc,fsync if="$SCRIPT_DIR/sys_partition_nor.bin" of=/tmp/spi.img bs=512 seek=3296
+	else
+        echo "Missing U-Boot binary!" >&2
+        return "$ERROR_REQUIRE_FILE"
+	fi
+}
+
 update_bootloader() {
 	local DEVICE=$1
 
-    if [[ -f "$SCRIPT_DIR/boot0_sdcard_sun55iw3p1.bin" ]] && [[ -f "$SCRIPT_DIR/boot_package.fex" ]]; then
-		dd conv=notrunc,fsync if="$SCRIPT_DIR/boot0_sdcard_sun55iw3p1.bin" of="$DEVICE" bs=512 seek=256
+    if [[ -f "$SCRIPT_DIR/boot0_sdcard.bin" ]] && [[ -f "$SCRIPT_DIR/boot0_sdcard.bin" ]] && [[ -f "$SCRIPT_DIR/boot_package.fex" ]]; then
+		dd conv=notrunc,fsync if="$SCRIPT_DIR/boot0_sdcard.bin" of="$DEVICE" bs=512 seek=256
+		dd conv=notrunc,fsync if="$SCRIPT_DIR/boot0_ufs.bin" of="$DEVICE" bs=512 seek=2064
 		dd conv=notrunc,fsync if="$SCRIPT_DIR/boot_package.fex" of="$DEVICE" bs=512 seek=24576
 	elif [[ -f "$SCRIPT_DIR/u-boot-sunxi-with-spl.bin" ]]; then
 		dd conv=notrunc,fsync if="$SCRIPT_DIR/u-boot-sunxi-with-spl.bin" of="$DEVICE" bs=512 seek=256
@@ -37,6 +51,33 @@ erase_emmc_boot() {
 		echo 0 >"/sys/class/block/$(basename "$1")/force_ro"
 	fi
 	blkdiscard -f "$@"
+}
+
+erase_spinor() {
+	local DEVICE=${1:-/dev/mtd0}
+
+	if [[ ! -e $DEVICE ]]; then
+		echo "$DEVICE is missing." >&2
+		return "$ERROR_REQUIRE_TARGET"
+	fi
+
+	flash_erase "$DEVICE" 0 0
+}
+
+update_spinor() {
+	local DEVICE=${1:-/dev/mtd0}
+
+	if [[ ! -e $DEVICE ]]; then
+		echo "$DEVICE is missing." >&2
+		return "$ERROR_REQUIRE_TARGET"
+	fi
+
+	build_spinor
+	erase_spinor "$DEVICE"
+	echo "Writing to $DEVICE..."
+	flashcp /tmp/spi.img "$DEVICE"
+	rm /tmp/spi.img
+	sync
 }
 
 # https://stackoverflow.com/a/28776166
