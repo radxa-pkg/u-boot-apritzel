@@ -1,0 +1,54 @@
+From 4b9ae4f0345572686bb2d0a65dfa34424cd94562 Mon Sep 17 00:00:00 2001
+From: Feng Zhang <feng@radxa.com>
+Date: Fri, 30 Jan 2026 10:08:04 +0000
+Subject: [PATCH 8/9] net: dwc_eth_qos_sunxi: read MAC address from Radxa
+ EEPROM
+
+Signed-off-by: Feng Zhang <feng@radxa.com>
+---
+ drivers/net/dwc_eth_qos_sunxi.c | 15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
+
+diff --git a/src/drivers/net/dwc_eth_qos_sunxi.c b/src/drivers/net/dwc_eth_qos_sunxi.c
+index 70711460f27..add4b3ed964 100644
+--- a/src/drivers/net/dwc_eth_qos_sunxi.c
++++ b/src/drivers/net/dwc_eth_qos_sunxi.c
+@@ -14,6 +14,7 @@
+ #include <phy.h>
+ #include <regmap.h>
+ #include <syscon.h>
++#include <radxa-i2c-eeprom.h>
+ 
+ #include <asm/io.h>
+ 
+@@ -316,6 +317,18 @@ static int eqos_remove_resources_sunxi(struct udevice *dev)
+ 	return 0;
+ }
+ 
++static int eqos_get_enetaddr_radxa(struct udevice *dev)
++{
++	struct eth_pdata *pdata = dev_get_plat(dev);
++
++	if (radxa_mac_read_from_eeprom(pdata->enetaddr)) {
++		printf("%s: Error read mac addr from eeprom\n", dev->name);
++		return -1;
++	}
++
++	return 0;
++}
++
+ static struct eqos_ops eqos_sunxi_ops = {
+ 	.eqos_inval_desc = eqos_inval_desc_generic,
+ 	.eqos_flush_desc = eqos_flush_desc_generic,
+@@ -330,7 +343,7 @@ static struct eqos_ops eqos_sunxi_ops = {
+ 	.eqos_calibrate_pads = eqos_null_ops,
+ 	.eqos_disable_calibration = eqos_null_ops,
+ 	.eqos_set_tx_clk_speed = eqos_null_ops,
+-	.eqos_get_enetaddr = eqos_null_ops,
++	.eqos_get_enetaddr = eqos_get_enetaddr_radxa,
+ 	.eqos_get_tick_clk_rate = eqos_get_tick_clk_rate_sunxi
+ };
+ 
+-- 
+2.49.0
+

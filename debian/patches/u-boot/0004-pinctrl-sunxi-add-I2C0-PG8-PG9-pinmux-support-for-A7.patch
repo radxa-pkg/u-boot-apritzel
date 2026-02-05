@@ -1,0 +1,70 @@
+From 5599bb0c3c26e465037d6dbe0b65b27e3b711d8c Mon Sep 17 00:00:00 2001
+From: Feng Zhang <feng@radxa.com>
+Date: Fri, 30 Jan 2026 03:31:21 +0000
+Subject: [PATCH 4/9] pinctrl: sunxi: add I2C0 (PG8/PG9) pinmux support for
+ A733
+
+Add pin control configuration for I2C0 on PG8 (SDA) and PG9 (SCL) in the
+sun60i-a733 SoC. This enables I2C0 usage on platforms utilizing these pins.
+
+Signed-off-by: Feng Zhang <feng@radxa.com>
+---
+ arch/arm/dts/sun60i-a733.dtsi         | 22 ++++++++++++++++++++++
+ drivers/pinctrl/sunxi/pinctrl-sunxi.c |  1 +
+ 2 files changed, 23 insertions(+)
+
+diff --git a/src/arch/arm/dts/sun60i-a733.dtsi b/src/arch/arm/dts/sun60i-a733.dtsi
+index 04c9908d0b5..be1fbd282a8 100644
+--- a/src/arch/arm/dts/sun60i-a733.dtsi
++++ b/src/arch/arm/dts/sun60i-a733.dtsi
+@@ -178,6 +178,12 @@
+ 				drive-strength = <30>;
+ 				bias-pull-up;
+ 			};
++
++			i2c_pins: i2c-pins {
++				pins = "PG8" ,"PG9";
++				allwinner,pinmux = <6>;
++				function = "i2c0";
++			};
+ 		};
+ 
+ 		ccu: clock-controller@2002000 {
+@@ -201,6 +207,22 @@
+ 			status = "okay";
+ 		};
+ 
++		i2c0: i2c@2510000 {
++			compatible = "allwinner,sun60i-a733-i2c",
++				     "allwinner,sun8i-v536-i2c",
++				     "allwinner,sun6i-a31-i2c";
++			reg = <0x02510000 0x400>;
++			interrupts = <GIC_SPI 11 IRQ_TYPE_LEVEL_HIGH>;
++			clocks = <&ccu CLK_BUS_I2C0>;
++			resets = <&ccu RST_BUS_I2C0>;
++			pinctrl-names = "default";
++			pinctrl-0 = <&i2c_pins>;
++			status = "disabled";
++
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
+ 		uart0: serial@2500000 {
+ 			compatible = "snps,dw-apb-uart";
+ 			reg = <0x02500000 0x400>;
+diff --git a/src/drivers/pinctrl/sunxi/pinctrl-sunxi.c b/src/drivers/pinctrl/sunxi/pinctrl-sunxi.c
+index c628109511e..e9d36c92424 100644
+--- a/src/drivers/pinctrl/sunxi/pinctrl-sunxi.c
++++ b/src/drivers/pinctrl/sunxi/pinctrl-sunxi.c
+@@ -791,6 +791,7 @@ static const struct sunxi_pinctrl_function sun60i_a733_pinctrl_functions[] = {
+ 	{ "gpio_out",	1 },
+ 	{ "gmac0",	5 },	/* PH0-PH15 */
+ 	{ "gmac1",	5 },	/* PJ0-PJ15 */
++	{ "i2c0",	6 },	/* PG8, PG9*/
+ 	{ "mmc0",	2 },	/* PF0-PF5 */
+ 	{ "mmc1",	2 },	/* PG0-PG5 */
+ 	{ "mmc2",	3 },	/* PC0, PC1, PC5, PC6, PC8-PC11, PC13-PC16 */
+-- 
+2.49.0
+

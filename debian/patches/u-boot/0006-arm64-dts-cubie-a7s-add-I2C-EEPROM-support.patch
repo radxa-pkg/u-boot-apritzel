@@ -1,0 +1,49 @@
+From dfb3ec2fff0c04673ab75ce5019e37f55dc25d67 Mon Sep 17 00:00:00 2001
+From: Feng Zhang <feng@radxa.com>
+Date: Fri, 30 Jan 2026 03:37:56 +0000
+Subject: [PATCH 6/9] arm64: dts: cubie-a7s: add I2C EEPROM support
+
+Signed-off-by: Feng Zhang <feng@radxa.com>
+---
+ arch/arm/dts/sun60i-a733-cubie-a7s.dts | 8 ++++++++
+ configs/radxa-cubie-a7s_defconfig      | 5 +++++
+ 2 files changed, 13 insertions(+)
+
+diff --git a/src/arch/arm/dts/sun60i-a733-cubie-a7s.dts b/src/arch/arm/dts/sun60i-a733-cubie-a7s.dts
+index 6b2cff2d6e7..438a0defcf1 100644
+--- a/src/arch/arm/dts/sun60i-a733-cubie-a7s.dts
++++ b/src/arch/arm/dts/sun60i-a733-cubie-a7s.dts
+@@ -109,6 +109,14 @@
+ 	};
+ };
+ 
++&i2c0 {
++	status = "okay";
++	eeprom: eeprom@50 {
++		compatible = "atmel,24c16a", "i2c-eeprom";
++		reg = <0x50>;
++	};
++};
++
+ &r_i2c0 {
+ 	status = "okay";
+ 
+diff --git a/src/configs/radxa-cubie-a7s_defconfig b/src/configs/radxa-cubie-a7s_defconfig
+index 1cd767f290c..703ddc0a2c7 100644
+--- a/src/configs/radxa-cubie-a7s_defconfig
++++ b/src/configs/radxa-cubie-a7s_defconfig
+@@ -16,6 +16,11 @@ CONFIG_CMD_DFU=y
+ CONFIG_CMD_I2C=y
+ CONFIG_NET_RANDOM_ETHADDR=y
+ CONFIG_SYS_I2C_MVTWSI=y
++CONFIG_MISC=y
++CONFIG_NVMEM=y
++CONFIG_I2C_EEPROM=y
++CONFIG_SYS_I2C_EEPROM_ADDR=0x50
++CONFIG_SYS_I2C_EEPROM_ADDR_OVERFLOW=0x7
+ CONFIG_SUPPORT_EMMC_BOOT=y
+ CONFIG_DM_MDIO=y
+ CONFIG_DM_ETH_PHY=y
+-- 
+2.49.0
+
