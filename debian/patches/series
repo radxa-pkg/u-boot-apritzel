@@ -10,3 +10,5 @@ u-boot/0009-defconfig-enable-RADXA_EEPROM_ID-for-Cubie-A7S.patch
 u-boot/0010-drivers-adc-Add-sunxi-ADC-driver.patch
 u-boot/0011-board-sunxi-Add-Radxa-unified-image-support.patch
 u-boot/0012-configs-cubie-a7s-Enable-ADC-and-unified-image-suppo.patch
+u-boot/0013-include-sunxi_gpio-Add-two-extra-GPIO-bank-definitio.patch
+u-boot/0014-board-sunxi-cubie_board-Initialize-GPIO-state-to-inp.patch
