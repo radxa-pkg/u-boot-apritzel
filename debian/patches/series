@@ -12,3 +12,5 @@ u-boot/0011-board-sunxi-Add-Radxa-unified-image-support.patch
 u-boot/0012-configs-cubie-a7s-Enable-ADC-and-unified-image-suppo.patch
 u-boot/0013-include-sunxi_gpio-Add-two-extra-GPIO-bank-definitio.patch
 u-boot/0014-board-sunxi-cubie_board-Initialize-GPIO-state-to-inp.patch
+u-boot/0015-arm-dts-cubie-a7s-Keep-board-ID-detect-power-enabled.patch
+u-boot/0016-drivers-misc-radxa-i2c-eeprom-Fix-macaddr-read-error.patch
