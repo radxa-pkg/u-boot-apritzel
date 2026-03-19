@@ -6,3 +6,7 @@
 	path = tools
 	url = https://gitlab.com/tina5.0_aiot/lichee/tools.git
 	branch = product-aiot-stable
+[submodule "atf"]
+	path = atf
+	url = https://github.com/dlan17/trusted-firmware-a.git
+	branch = A733
