@@ -1,5 +1,6 @@
-u-boot-dlan17 (2026.01-1) UNRELEASED; urgency=medium
+u-boot-dlan17 (2026.01-1) unstable; urgency=medium
 
+  [ "Radxa Computer Co., Ltd" ]
   [ dependabot[bot] ]
   * build(deps): bump actions/download-artifact from 4 to 5
   * build(deps): bump actions/checkout from 4 to 5
@@ -7,8 +8,33 @@ u-boot-dlan17 (2026.01-1) UNRELEASED; urgency=medium
   * build(deps): bump actions/download-artifact from 5 to 6
   * build(deps): bump actions/checkout from 5 to 6
   * build(deps): bump actions/upload-artifact from 4 to 6
+  * build(deps): bump docker/setup-qemu-action from 3 to 4
+  * build(deps): bump actions/upload-artifact from 6 to 7
+  * build(deps): bump actions/download-artifact from 7 to 8
 
- -- "Radxa Computer Co., Ltd" <dev@radxa.com>  Thu, 22 Jan 2026 18:33:43 +0800
+  [ Jiali Chen ]
+  * feat: submodule: update and add tools
+  * build: add some vendor u-boot blobs
+  * feat: add build support
+  * feat: add patches for build radxa-cubie-a7s
+  * feat: add radxa-a733 and radxa-cubie-a7s packages
+  * feat: setup.sh: add support for vendor packaged blobs
+  * fix: add some patches
+
+  [ Feng Zhang ]
+  * feat: read MAC address from Radxa EEPROM
+  * feat: Add Radxa A733 unified image support
+  * feat: Initialize the hardware ID detection pin to input mode
+  * fix: Fix mac addr read error and board ID power default
+
+  [ feng ]
+  * Update debian/patches/series
+
+  [ ZHANG Yuntian ]
+  * fix: restore atf submodule
+  * chore: add pkg.conf.template
+
+ -- "Radxa Computer Co., Ltd" <dev@radxa.com>  Thu, 19 Mar 2026 11:47:50 +0000
 
 u-boot-apritzel (2025.04-1) UNRELEASED; urgency=medium
 
