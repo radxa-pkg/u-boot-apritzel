@@ -14,3 +14,4 @@ u-boot/0013-include-sunxi_gpio-Add-two-extra-GPIO-bank-definitio.patch
 u-boot/0014-board-sunxi-cubie_board-Initialize-GPIO-state-to-inp.patch
 u-boot/0015-arm-dts-cubie-a7s-Keep-board-ID-detect-power-enabled.patch
 u-boot/0016-drivers-misc-radxa-i2c-eeprom-Fix-macaddr-read-error.patch
+u-boot/0017-add-set-sramc-mode-to-npu.patch
