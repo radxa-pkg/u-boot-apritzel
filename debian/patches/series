@@ -25,3 +25,7 @@ u-boot/0026-pinctrl-sunxi-fix-R_PIO-register-bank-offset-calcula.patch
 u-boot/0027-sunxi-dts-a733-cubie-a7s-add-USB-host-power-regulato.patch
 u-boot/0028-cmd-sunxi_boot_arisc-pass-device-tree-address-to-SCP.patch
 u-boot/0029-boot-pxe_utils-hook-sunxi_boot_arisc-after-device-t.patch
+u-boot/0030-arm64-dts-sunxi-a733-update-A7S-board-supplies.patch
+u-boot/0031-arm64-dts-a733-enable-SPI-flash-UFS-PCIe-on-A7S.patch
+u-boot/0032-configs-radxa-cubie-a7s-enable-PCIe-NVMe-UFS-SPI-NOR.patch
+u-boot/0033-sunxi-add-NVMe-to-distro-boot-targets.patch
