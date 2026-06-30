@@ -1,0 +1,50 @@
+From 08c07ec777661e5c437d8cb3441770049c1f97e5 Mon Sep 17 00:00:00 2001
+From: Feng Zhang <feng@radxa.com>
+Date: Thu, 25 Jun 2026 18:41:53 +0800
+Subject: [PATCH] arm64: dts: a733: enable SPI flash, UFS, PCIe on A7S
+
+Signed-off-by: Feng Zhang <feng@radxa.com>
+---
+ src/arch/arm/dts/sun60i-a733-cubie-a7s.dts | 30 ++++++++++++++++++++++++++
+ 1 file changed, 30 insertions(+)
+
+diff --git a/src/arch/arm/dts/sun60i-a733-cubie-a7s.dts b/src/arch/arm/dts/sun60i-a733-cubie-a7s.dts
+index 1136c089ea6..d2deb4a1525 100644
+--- a/src/arch/arm/dts/sun60i-a733-cubie-a7s.dts
++++ b/src/arch/arm/dts/sun60i-a733-cubie-a7s.dts
+@@ -243,3 +243,33 @@
+ 		};
+ 	};
+ };
++
++&spi0  {
++	status = "okay";
++
++	flash@0 {
++		#address-cells = <1>;
++		#size-cells = <1>;
++		compatible = "jedec,spi-nor";
++		reg = <0>;
++		spi-max-frequency = <20000000>;
++	};
++};
++
++&ufs {
++	status = "okay";
++};
++
++&serdes {
++	status = "okay";
++	combophy0: combo-phy0@6c01000 {
++		lane_invert = <0 0 0 0>;
++		lane_remap = <2 3 0 1>;
++	};
++};
++
++&pcie_rc {
++	status = "okay";
++	pcie1v8-supply = <&reg_bldo1>;
++	pcie3v3-supply = <&reg_dcdc1>;
++};
+-- 
+2.43.0

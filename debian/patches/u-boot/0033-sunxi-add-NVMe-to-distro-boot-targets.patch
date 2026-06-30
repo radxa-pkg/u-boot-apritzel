@@ -1,0 +1,37 @@
+From 0d402c3abffedd75e1dc5d35323998455205e01b Mon Sep 17 00:00:00 2001
+From: Feng Zhang <feng@radxa.com>
+Date: Thu, 25 Jun 2026 18:43:33 +0800
+Subject: [PATCH] sunxi: add NVMe to distro boot targets
+
+Signed-off-by: Feng Zhang <feng@radxa.com>
+---
+ src/include/configs/sunxi-common.h | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/src/include/configs/sunxi-common.h b/src/include/configs/sunxi-common.h
+index 5507e233797..3d00a1503ca 100644
+--- a/src/include/configs/sunxi-common.h
++++ b/src/include/configs/sunxi-common.h
+@@ -191,6 +191,12 @@
+ #define BOOT_TARGET_DEVICES_SCSI(func)
+ #endif
+ 
++#ifdef CONFIG_CMD_NVME
++#define BOOT_TARGET_DEVICES_NVME(func) func(NVME, nvme, 0)
++#else
++#define BOOT_TARGET_DEVICES_NVME(func)
++#endif
++
+ #ifdef CONFIG_USB_STORAGE
+ #define BOOT_TARGET_DEVICES_USB(func) func(USB, usb, 0)
+ #else
+@@ -223,6 +229,7 @@
+ 	func(FEL, fel, na) \
+ 	BOOT_TARGET_DEVICES_MMC(func) \
+ 	BOOT_TARGET_DEVICES_SCSI(func) \
++	BOOT_TARGET_DEVICES_NVME(func) \
+ 	BOOT_TARGET_DEVICES_USB(func) \
+ 	BOOT_TARGET_DEVICES_PXE(func) \
+ 	BOOT_TARGET_DEVICES_DHCP(func)
+-- 
+2.43.0
