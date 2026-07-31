@@ -1,0 +1,207 @@
+From ca95fe467a7b3c52afd70ffa709ef57cddc31857 Mon Sep 17 00:00:00 2001
+From: Feng Zhang <feng@radxa.com>
+Date: Tue, 14 Jul 2026 19:02:59 +0800
+Subject: [PATCH] sunxi: a733: support SPI NOR boot in SPL
+
+The A733 BootROM reports SPI NOR boot source as 0x43 when loading
+the SPL from the 256 KiB fallback location. Map this value to the
+SPL SPI boot device and account for the fallback offset when locating
+the FIT image.
+
+Add A733 support to the sunxi SPL SPI loader, including the SPI0
+controller base, pinmux, module clock, bus gate and reset setup.
+
+This allows SPL to initialize DRAM and load the FIT containing BL31,
+SCP and U-Boot proper directly from SPI NOR.
+
+Signed-off-by: Feng Zhang <feng@radxa.com>
+---
+ src/arch/arm/include/asm/arch-sunxi/spl.h |  1 +
+ src/arch/arm/mach-sunxi/board.c           |  1 +
+ src/arch/arm/mach-sunxi/spl_spi_sunxi.c   | 98 +++++++++++++++++++--------
+ 3 files changed, 72 insertions(+), 28 deletions(-)
+
+diff --git a/src/arch/arm/include/asm/arch-sunxi/spl.h b/src/arch/arm/include/asm/arch-sunxi/spl.h
+index 14944a20eac..beb0fceb5f3 100644
+--- a/src/arch/arm/include/asm/arch-sunxi/spl.h
++++ b/src/arch/arm/include/asm/arch-sunxi/spl.h
+@@ -16,6 +16,7 @@
+ #define SUNXI_BOOTED_FROM_NAND	1
+ #define SUNXI_BOOTED_FROM_MMC2	2
+ #define SUNXI_BOOTED_FROM_SPI	3
++#define SUNXI_BOOTED_FROM_SPI_A733	0x43
+ #define SUNXI_BOOTED_FROM_MMC0_HIGH	0x10
+ #define SUNXI_BOOTED_FROM_MMC2_HIGH	0x12
+ 
+diff --git a/src/arch/arm/mach-sunxi/board.c b/src/arch/arm/mach-sunxi/board.c
+index 930cadabd7a..0babd509e2e 100644
+--- a/src/arch/arm/mach-sunxi/board.c
++++ b/src/arch/arm/mach-sunxi/board.c
+@@ -320,6 +320,7 @@ uint32_t sunxi_get_boot_device(void)
+ 	case SUNXI_BOOTED_FROM_MMC2_HIGH:
+ 		return BOOT_DEVICE_MMC2;
+ 	case SUNXI_BOOTED_FROM_SPI:
++	case SUNXI_BOOTED_FROM_SPI_A733:
+ 		return BOOT_DEVICE_SPI;
+ 	}
+ 
+diff --git a/src/arch/arm/mach-sunxi/spl_spi_sunxi.c b/src/arch/arm/mach-sunxi/spl_spi_sunxi.c
+index 5f72e809952..dfb7192cbf7 100644
+--- a/src/arch/arm/mach-sunxi/spl_spi_sunxi.c
++++ b/src/arch/arm/mach-sunxi/spl_spi_sunxi.c
+@@ -87,6 +87,9 @@
+ 
+ #define CCM_AHB_GATING0             (CCM_BASE + 0x60)
+ #define CCM_H6_SPI_BGR_REG          (CCM_BASE + 0x96c)
++#define CCM_A733_BASE               0x02002000
++#define CCM_A733_SPI0_CLK           (CCM_A733_BASE + 0x0f00)
++#define CCM_A733_SPI_BGR_REG        (CCM_A733_BASE + 0x0f04)
+ #if IS_ENABLED(CONFIG_SUN50I_GEN_H6) || IS_ENABLED(CONFIG_SUNXI_GEN_NCAT2)
+ #define CCM_SPI0_CLK                (CCM_BASE + 0x940)
+ #else
+@@ -110,6 +113,14 @@
+  */
+ static void spi0_pinmux_setup(unsigned int pin_function)
+ {
++	if (IS_ENABLED(CONFIG_MACH_SUN60I_A733)) {
++		sunxi_gpio_set_cfgpin(SUNXI_GPC(2), pin_function);
++		sunxi_gpio_set_cfgpin(SUNXI_GPC(3), pin_function);
++		sunxi_gpio_set_cfgpin(SUNXI_GPC(4), pin_function);
++		sunxi_gpio_set_cfgpin(SUNXI_GPC(12), pin_function);
++		return;
++	}
++
+ 	/* All chips use PC2. And all chips use PC0, except R528/T113 */
+ 	if (!IS_ENABLED(CONFIG_MACH_SUN8I_R528))
+ 		sunxi_gpio_set_cfgpin(SUNXI_GPC(0), pin_function);
+@@ -146,6 +157,9 @@ static bool is_sun6i_gen_spi(void)
+ 
+ static uintptr_t spi0_base_address(void)
+ {
++	if (IS_ENABLED(CONFIG_MACH_SUN60I_A733))
++		return 0x02540000;
++
+ 	if (IS_ENABLED(CONFIG_MACH_SUN8I_R40))
+ 		return 0x01C05000;
+ 
+@@ -169,33 +183,41 @@ static void spi0_enable_clock(void)
+ {
+ 	uintptr_t base = spi0_base_address();
+ 
+-	/* Deassert SPI0 reset on SUN6I */
+-	if (IS_ENABLED(CONFIG_SUN50I_GEN_H6) ||
+-	    IS_ENABLED(CONFIG_SUNXI_GEN_NCAT2))
+-		setbits_le32(CCM_H6_SPI_BGR_REG, (1U << 16) | 0x1);
+-	else if (is_sun6i_gen_spi())
+-		setbits_le32(SUN6I_BUS_SOFT_RST_REG0,
+-			     (1 << AHB_RESET_SPI0_SHIFT));
+-
+-	/* Open the SPI0 gate */
+-	if (!IS_ENABLED(CONFIG_SUN50I_GEN_H6) &&
+-	    !IS_ENABLED(CONFIG_SUNXI_GEN_NCAT2))
+-		setbits_le32(CCM_AHB_GATING0, (1 << AHB_GATE_OFFSET_SPI0));
+-
+-	if (IS_ENABLED(CONFIG_MACH_SUNIV)) {
+-		/* Divide by 32, clock source is AHB clock 200MHz */
+-		writel(SPI0_CLK_DIV_BY_32, base + SUN6I_SPI0_CCTL);
++	if (IS_ENABLED(CONFIG_MACH_SUN60I_A733)) {
++		/* Select OSC24M and enable the module clock. */
++		writel(BIT(31), CCM_A733_SPI0_CLK);
++		/* Deassert reset and enable the SPI0 bus gate. */
++		setbits_le32(CCM_A733_SPI_BGR_REG, BIT(16) | BIT(0));
+ 	} else {
+-		/* New SoCs do not have a clock divider inside */
+-		if (!IS_ENABLED(CONFIG_SUNXI_GEN_NCAT2)) {
+-			/* Divide by 4 */
+-			writel(SPI0_CLK_DIV_BY_4,
+-			       base + (is_sun6i_gen_spi() ? SUN6I_SPI0_CCTL :
+-			       SUN4I_SPI0_CCTL));
++		/* Deassert SPI0 reset on SUN6I */
++		if (IS_ENABLED(CONFIG_SUN50I_GEN_H6) ||
++		    IS_ENABLED(CONFIG_SUNXI_GEN_NCAT2))
++			setbits_le32(CCM_H6_SPI_BGR_REG, (1U << 16) | 0x1);
++		else if (is_sun6i_gen_spi())
++			setbits_le32(SUN6I_BUS_SOFT_RST_REG0,
++				     (1 << AHB_RESET_SPI0_SHIFT));
++
++		/* Open the SPI0 gate */
++		if (!IS_ENABLED(CONFIG_SUN50I_GEN_H6) &&
++		    !IS_ENABLED(CONFIG_SUNXI_GEN_NCAT2))
++			setbits_le32(CCM_AHB_GATING0,
++				     (1 << AHB_GATE_OFFSET_SPI0));
++
++		if (IS_ENABLED(CONFIG_MACH_SUNIV)) {
++			/* Divide by 32, clock source is AHB clock 200MHz */
++			writel(SPI0_CLK_DIV_BY_32, base + SUN6I_SPI0_CCTL);
++		} else {
++			/* New SoCs do not have a clock divider inside */
++			if (!IS_ENABLED(CONFIG_SUNXI_GEN_NCAT2)) {
++				/* Divide by 4 */
++				writel(SPI0_CLK_DIV_BY_4,
++				       base + (is_sun6i_gen_spi() ?
++				       SUN6I_SPI0_CCTL : SUN4I_SPI0_CCTL));
++			}
++
++			/* 24MHz from OSC24M */
++			writel(BIT(31), CCM_SPI0_CLK);
+ 		}
+-
+-		/* 24MHz from OSC24M */
+-		writel((1 << 31), CCM_SPI0_CLK);
+ 	}
+ 
+ 	if (is_sun6i_gen_spi()) {
+@@ -234,6 +256,12 @@ static void spi0_disable_clock(void)
+ 		clrbits_le32(base + SUN4I_SPI0_CTL, SUN4I_CTL_MASTER |
+ 					     SUN4I_CTL_ENABLE);
+ 
++	if (IS_ENABLED(CONFIG_MACH_SUN60I_A733)) {
++		writel(0, CCM_A733_SPI0_CLK);
++		clrbits_le32(CCM_A733_SPI_BGR_REG, BIT(16) | BIT(0));
++		return;
++	}
++
+ 	/* Disable the SPI0 clock */
+ 	if (!IS_ENABLED(CONFIG_MACH_SUNIV))
+ 		writel(0, CCM_SPI0_CLK);
+@@ -256,7 +284,9 @@ static void spi0_init(void)
+ {
+ 	unsigned int pin_function = SUNXI_GPC_SPI0;
+ 
+-	if (IS_ENABLED(CONFIG_MACH_SUN50I) ||
++	if (IS_ENABLED(CONFIG_MACH_SUN60I_A733))
++		pin_function = 5;
++	else if (IS_ENABLED(CONFIG_MACH_SUN50I) ||
+ 	    IS_ENABLED(CONFIG_SUN50I_GEN_H6))
+ 		pin_function = SUN50I_GPC_SPI0;
+ 	else if (IS_ENABLED(CONFIG_MACH_SUNIV) ||
+@@ -381,12 +411,24 @@ static int spl_spi_load_image(struct spl_image_info *spl_image,
+ 	header = (struct legacy_img_hdr *)CONFIG_TEXT_BASE;
+ 	load_offset = max_t(uint32_t, load_offset, CONFIG_SYS_SPI_U_BOOT_OFFS);
+ 
++	/*
++	 * A733 BROM reports SPI boot from the 256 KiB fallback location as
++	 * 0x43. In that case the FIT follows the SPL at flash offset 0x80000,
++	 * not at the SPL length (0x40000) relative to flash offset zero.
++	 */
++	if (IS_ENABLED(CONFIG_MACH_SUN60I_A733)) {
++		struct boot_file_head *egon_head = (void *)SPL_ADDR;
++
++		if (readb(&egon_head->boot_media) == SUNXI_BOOTED_FROM_SPI_A733)
++			load_offset += 256 * 1024;
++	}
++
+ 	spi0_init();
+ 
+ 	spi0_read_data((void *)header, load_offset, 0x40);
+ 
+-        if (IS_ENABLED(CONFIG_SPL_LOAD_FIT) &&
+-		image_get_magic(header) == FDT_MAGIC) {
++	if (IS_ENABLED(CONFIG_SPL_LOAD_FIT) &&
++	    image_get_magic(header) == FDT_MAGIC) {
+ 		struct spl_load_info load;
+ 
+ 		debug("Found FIT image\n");
+-- 
+2.43.0
+
