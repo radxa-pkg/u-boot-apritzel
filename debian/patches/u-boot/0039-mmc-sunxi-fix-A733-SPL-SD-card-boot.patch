@@ -1,0 +1,288 @@
+From a1f759fbdf58c436961f19885a4f4b55cb181c46 Mon Sep 17 00:00:00 2001
+From: Feng Zhang <feng@radxa.com>
+Date: Fri, 31 Jul 2026 20:05:23 +0800
+Subject: [PATCH] mmc: sunxi: fix A733 SPL SD card boot
+
+The size-optimized SPL device tree drops the clock and pinctrl data
+needed by the driver-model MMC path. Set up the A733 MMC clock gate,
+reset and pins directly in SPL.
+
+Add the required controller settling intervals and wait for FIFO reset
+completion so SD boot remains reliable when UFS support enables driver
+model in SPL.
+
+Signed-off-by: Feng Zhang <feng@radxa.com>
+---
+ src/drivers/mmc/sunxi_mmc.c | 132 +++++++++++++++++++++++++++++++++++-----
+ 1 file changed, 118 insertions(+), 14 deletions(-)
+
+diff --git a/src/drivers/mmc/sunxi_mmc.c b/src/drivers/mmc/sunxi_mmc.c
+index 7c4c85f17ff..1eeb16898a7 100644
+--- a/src/drivers/mmc/sunxi_mmc.c
++++ b/src/drivers/mmc/sunxi_mmc.c
+@@ -50,6 +50,23 @@ struct sunxi_mmc_priv {
+ 	struct mmc_config cfg;
+ };
+ 
++static bool sunxi_mmc_a733_spl(void)
++{
++	return IS_ENABLED(CONFIG_XPL_BUILD) &&
++	       IS_ENABLED(CONFIG_MACH_SUN60I_A733);
++}
++
++/*
++ * Keep A733 SPL controller programming stages apart. Without these gaps,
++ * back-to-back operations become unreliable; serial diagnostics previously
++ * hid the problem by providing an equivalent delay.
++ */
++static void sunxi_mmc_a733_spl_delay(void)
++{
++	if (sunxi_mmc_a733_spl())
++		udelay(100);
++}
++
+ /*
+  * All A64 and later MMC controllers feature auto-calibration. This would
+  * normally be detected via the compatible string, but we need something
+@@ -193,11 +210,15 @@ static int mmc_update_clk(struct sunxi_mmc_priv *priv)
+ 	      SUNXI_MMC_CMD_UPCLK_ONLY |
+ 	      SUNXI_MMC_CMD_WAIT_PRE_OVER;
+ 
++	if (sunxi_mmc_a733_spl())
++		udelay(100);
+ 	writel(cmd, &priv->reg->cmd);
+ 	while (readl(&priv->reg->cmd) & SUNXI_MMC_CMD_START) {
+ 		if (get_timer(start) > timeout_msecs)
+ 			return -1;
+ 	}
++	if (sunxi_mmc_a733_spl())
++		udelay(100);
+ 
+ 	/* clock update sets various irq status bits, clear these */
+ 	writel(readl(&priv->reg->rint), &priv->reg->rint);
+@@ -246,6 +267,8 @@ static int mmc_config_clock(struct sunxi_mmc_priv *priv, struct mmc *mmc)
+ static int sunxi_mmc_set_ios_common(struct sunxi_mmc_priv *priv,
+ 				    struct mmc *mmc)
+ {
++	if (sunxi_mmc_a733_spl())
++		udelay(100);
+ 	debug("set ios: bus_width: %x, clock: %d\n",
+ 	      mmc->bus_width, mmc->clock);
+ 
+@@ -281,6 +304,7 @@ static int mmc_trans_data_by_cpu(struct sunxi_mmc_priv *priv, struct mmc *mmc,
+ 
+ 	if (timeout_msecs < 2000)
+ 		timeout_msecs = 2000;
++	sunxi_mmc_a733_spl_delay();
+ 
+ 	/* Always read / write data through the CPU */
+ 	setbits_le32(&priv->reg->gctrl, SUNXI_MMC_GCTRL_ACCESS_BY_AHB);
+@@ -324,6 +348,7 @@ static int mmc_trans_data_by_cpu(struct sunxi_mmc_priv *priv, struct mmc *mmc,
+ 			buff[i++] = readl_relaxed(&priv->reg->fifo);
+ 		dmb();
+ 	}
++	sunxi_mmc_a733_spl_delay();
+ 
+ 	return 0;
+ }
+@@ -347,6 +372,23 @@ static int mmc_rint_wait(struct sunxi_mmc_priv *priv, struct mmc *mmc,
+ 	return 0;
+ }
+ 
++static int sunxi_mmc_reset_fifo(struct sunxi_mmc_priv *priv)
++{
++	unsigned long start;
++
++	setbits_le32(&priv->reg->gctrl, SUNXI_MMC_GCTRL_FIFO_RESET);
++	if (!sunxi_mmc_a733_spl())
++		return 0;
++
++	start = get_timer(0);
++	while (readl(&priv->reg->gctrl) & SUNXI_MMC_GCTRL_FIFO_RESET) {
++		if (get_timer(start) > 10)
++			return -ETIMEDOUT;
++	}
++
++	return 0;
++}
++
+ static int sunxi_mmc_send_cmd_common(struct sunxi_mmc_priv *priv,
+ 				     struct mmc *mmc, struct mmc_cmd *cmd,
+ 				     struct mmc_data *data)
+@@ -356,6 +398,7 @@ static int sunxi_mmc_send_cmd_common(struct sunxi_mmc_priv *priv,
+ 	int error = 0;
+ 	unsigned int status = 0;
+ 	unsigned int bytecnt = 0;
++	int reset_error;
+ 
+ 	if (priv->fatal_err)
+ 		return -1;
+@@ -390,6 +433,7 @@ static int sunxi_mmc_send_cmd_common(struct sunxi_mmc_priv *priv,
+ 
+ 	debug("mmc %d, cmd %d(0x%08x), arg 0x%08x\n", priv->mmc_no,
+ 	      cmd->cmdidx, cmdval | cmd->cmdidx, cmd->cmdarg);
++	sunxi_mmc_a733_spl_delay();
+ 	writel(cmd->cmdarg, &priv->reg->arg);
+ 
+ 	if (!data)
+@@ -407,6 +451,7 @@ static int sunxi_mmc_send_cmd_common(struct sunxi_mmc_priv *priv,
+ 		debug("trans data %d bytes\n", bytecnt);
+ 		writel(cmdval | cmd->cmdidx, &priv->reg->cmd);
+ 		ret = mmc_trans_data_by_cpu(priv, mmc, data);
++		sunxi_mmc_a733_spl_delay();
+ 		if (ret) {
+ 			error = readl(&priv->reg->rint) &
+ 				SUNXI_MMC_RINT_INTERRUPT_ERROR_BIT;
+@@ -419,6 +464,7 @@ static int sunxi_mmc_send_cmd_common(struct sunxi_mmc_priv *priv,
+ 			      "cmd");
+ 	if (error)
+ 		goto out;
++	sunxi_mmc_a733_spl_delay();
+ 
+ 	if (data) {
+ 		timeout_msecs = 120;
+@@ -430,6 +476,7 @@ static int sunxi_mmc_send_cmd_common(struct sunxi_mmc_priv *priv,
+ 				      "data");
+ 		if (error)
+ 			goto out;
++		sunxi_mmc_a733_spl_delay();
+ 	}
+ 
+ 	if (cmd->resp_type & MMC_RSP_BUSY) {
+@@ -459,13 +506,19 @@ static int sunxi_mmc_send_cmd_common(struct sunxi_mmc_priv *priv,
+ 		debug("mmc resp 0x%08x\n", cmd->response[0]);
+ 	}
+ out:
++	/* Let the transaction settle before clearing IRQs and resetting the FIFO. */
++	if (sunxi_mmc_a733_spl())
++		udelay(500);
+ 	if (error < 0) {
+ 		writel(SUNXI_MMC_GCTRL_RESET, &priv->reg->gctrl);
+ 		mmc_update_clk(priv);
+ 	}
+ 	writel(0xffffffff, &priv->reg->rint);
+-	writel(readl(&priv->reg->gctrl) | SUNXI_MMC_GCTRL_FIFO_RESET,
+-	       &priv->reg->gctrl);
++	reset_error = sunxi_mmc_reset_fifo(priv);
++	sunxi_mmc_a733_spl_delay();
++	if (!error)
++		error = reset_error;
++	sunxi_mmc_a733_spl_delay();
+ 
+ 	return error;
+ }
+@@ -693,6 +746,32 @@ static unsigned int get_mclk_offset(int mmc_no)
+ 	return offset + size * mmc_no;
+ };
+ 
++static void sunxi_mmc_a733_spl_pinmux_setup(unsigned int mmc_no)
++{
++	unsigned int pin;
++
++	switch (mmc_no) {
++	case 0:
++		for (pin = SUNXI_GPF(0); pin <= SUNXI_GPF(5); pin++) {
++			sunxi_gpio_set_cfgpin(pin, SUNXI_GPF_SDC0);
++			sunxi_gpio_set_pull(pin, SUNXI_GPIO_PULL_UP);
++			sunxi_gpio_set_drv(pin, 2);
++		}
++		break;
++	case 2:
++		for (pin = SUNXI_GPC(0); pin <= SUNXI_GPC(16); pin++) {
++			if (pin > SUNXI_GPC(1) && pin < SUNXI_GPC(5))
++				continue;
++			if (pin == SUNXI_GPC(7) || pin == SUNXI_GPC(12))
++				continue;
++			sunxi_gpio_set_cfgpin(pin, SUNXI_GPC_SDC2);
++			sunxi_gpio_set_pull(pin, SUNXI_GPIO_PULL_UP);
++			sunxi_gpio_set_drv(pin, 3);
++		}
++		break;
++	}
++}
++
+ static int sunxi_mmc_probe(struct udevice *dev)
+ {
+ 	struct mmc_uclass_priv *upriv = dev_get_uclass_priv(dev);
+@@ -703,6 +782,7 @@ static int sunxi_mmc_probe(struct udevice *dev)
+ 	struct mmc_config *cfg = &plat->cfg;
+ 	struct ofnode_phandle_args args;
+ 	u32 *ccu_reg;
++	bool spl_a733 = sunxi_mmc_a733_spl();
+ 	int ret;
+ 
+ 	cfg->name = dev->name;
+@@ -720,35 +800,59 @@ static int sunxi_mmc_probe(struct udevice *dev)
+ 
+ 	priv->reg = dev_read_addr_ptr(dev);
+ 
+-	/* We don't have a sunxi clock driver so find the clock address here */
+-	ret = dev_read_phandle_with_args(dev, "clocks", "#clock-cells", 0,
+-					  1, &args);
+-	if (ret)
+-		return ret;
+-	ccu_reg = (u32 *)(uintptr_t)ofnode_get_addr(args.node);
++	/*
++	 * The size-optimized SPL device tree drops clock phandles. Use the
++	 * fixed A733 CCU address there, while U-Boot proper keeps using the
++	 * clock provider from the device tree.
++	 */
++	if (spl_a733) {
++		ccu_reg = (u32 *)(uintptr_t)SUNXI_CCM_BASE;
++	} else {
++		ret = dev_read_phandle_with_args(dev, "clocks", "#clock-cells", 0,
++						 1, &args);
++		if (ret)
++			return ret;
++		ccu_reg = (u32 *)(uintptr_t)ofnode_get_addr(args.node);
++	}
+ 
+ 	priv->mmc_no = ((uintptr_t)priv->reg - SUNXI_MMC0_BASE) / 0x1000;
+ 	priv->mclkreg = (void *)ccu_reg + get_mclk_offset(priv->mmc_no);
++	if (spl_a733)
++		udelay(100);
+ 
+-	ret = clk_get_by_name(dev, "ahb", &gate_clk);
+-	if (!ret)
+-		clk_enable(&gate_clk);
++	if (spl_a733) {
++		sunxi_mmc_a733_spl_pinmux_setup(priv->mmc_no);
++		setbits_le32((void *)ccu_reg +
++			     CCU_MMC_GATE_RESET(priv->mmc_no), BIT(16) | BIT(0));
++	} else {
++		ret = clk_get_by_name(dev, "ahb", &gate_clk);
++		if (!ret)
++			clk_enable(&gate_clk);
+ 
+-	ret = reset_get_bulk(dev, &reset_bulk);
+-	if (!ret)
+-		reset_deassert_bulk(&reset_bulk);
++		ret = reset_get_bulk(dev, &reset_bulk);
++		if (!ret)
++			reset_deassert_bulk(&reset_bulk);
++	}
++	if (spl_a733)
++		udelay(100);
+ 
+ 	ret = mmc_set_mod_clk(priv, 24000000);
+ 	if (ret)
+ 		return ret;
++	if (spl_a733)
++		udelay(100);
+ 
+ 	/* This GPIO is optional */
+ 	gpio_request_by_name(dev, "cd-gpios", 0, &priv->cd_gpio,
+ 			     GPIOD_IS_IN | GPIOD_PULL_UP);
++	if (spl_a733)
++		udelay(100);
+ 
+ 	upriv->mmc = &plat->mmc;
+ 
+ 	sunxi_mmc_reset(priv->reg);
++	if (spl_a733)
++		udelay(100);
+ 
+ 	return 0;
+ }
+-- 
+2.43.0

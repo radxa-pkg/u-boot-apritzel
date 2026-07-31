@@ -28,3 +28,9 @@ u-boot/0030-arm64-dts-sunxi-a733-update-A7S-board-supplies.patch
 u-boot/0031-arm64-dts-a733-enable-SPI-flash-UFS-PCIe-on-A7S.patch
 u-boot/0032-configs-radxa-cubie-a7s-enable-PCIe-NVMe-UFS-SPI-NOR.patch
 u-boot/0033-sunxi-add-NVMe-to-distro-boot-targets.patch
+u-boot/0034-sunxi-a733-support-SPI-NOR-boot-in-SPL.patch
+u-boot/0035-configs-radxa-cubie-a7s-enable-SPI-NOR-boot-in-SPL.patch
+u-boot/0036-sunxi-a733-support-UFS-boot-in-SPL.patch
+u-boot/0037-arm-dts-sunxi-add-A733-boot-devices-to-SPL.patch
+u-boot/0038-configs-radxa-cubie-a7s-enable-UFS-boot-in-SPL.patch
+u-boot/0039-mmc-sunxi-fix-A733-SPL-SD-card-boot.patch
