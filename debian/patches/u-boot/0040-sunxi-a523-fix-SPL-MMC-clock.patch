@@ -1,0 +1,30 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Radxa Computer Co., Ltd <dev@radxa.com>
+Date: Tue, 04 Aug 2026 00:00:00 +0000
+Subject: [PATCH] sunxi: a523: enable MMC0 (SMHC0) clock and reset in SPL
+
+The A523/A527 SD card is on the mmc0 controller (0x4020000). The SPL
+clock init did not enable its bus gate and reset, so mmc init failed
+with -110 and SPL could not load U-Boot from SD.
+
+Signed-off-by: Radxa Computer Co., Ltd <dev@radxa.com>
+---
+ src/arch/arm/mach-sunxi/clock_sun50i_h6.c | 3 ++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/src/arch/arm/mach-sunxi/clock_sun50i_h6.c b/src/arch/arm/mach-sunxi/clock_sun50i_h6.c
+index 5ea27fc5..fa1cdc75 100644
+--- a/src/arch/arm/mach-sunxi/clock_sun50i_h6.c
++++ b/src/arch/arm/mach-sunxi/clock_sun50i_h6.c
+@@ -72,6 +72,9 @@ void clock_init_safe(void)
+ 		udelay(1);
+ 		writel(MBUS_UPDATE | MBUS_CLK_SRC_OSCM24 | MBUS_CLK_M(4),
+ 		       ccm + CCU_H6_MBUS_CFG);
++		/* Enable MMC0 (SMHC0) bus clock and deassert its reset for SD boot */
++		setbits_le32(ccm + 0x084c, BIT(0) | BIT(16));
++		setbits_le32(ccm + 0x0E04, BIT(17) | BIT(5));
+ 	} else {
+ 		writel(MBUS_CLK_SRC_PLL6X2 | MBUS_CLK_M(3),
+ 		       ccm + CCU_H6_MBUS_CFG);
+-- 
+2.47.1
