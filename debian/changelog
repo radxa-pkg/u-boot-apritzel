@@ -1,3 +1,21 @@
+u-boot-dlan17 (2026.04-3) unstable; urgency=medium
+
+  [ Feng Zhang ]
+  * patches: add Cubie A7S SPI/UFS/PCIe/NVMe support
+  * feat(setup): support the new Allwinner boot chain
+  * src: update to latest commit on allwinner/A733/boot
+  * build: rewrite Makefile for new boot chain
+  * u-boot: patches: drop 0017-sramc-mode patch for new boot chain
+  * awbin/a733: add ddr.bin for new boot chain
+  * awbin/a733: remove unused prebuilt bins for new boot chain
+  * u-boot: patches: adjust SPL memory layout for new boot chain
+  * u-boot: patches: add A733 SPI NOR and UFS SPL boot support
+
+  [ github-actions[bot] ]
+  * chore: update submodules
+
+ -- "Radxa Computer Co., Ltd" <dev@radxa.com>  Tue, 04 Aug 2026 03:10:40 +0000
+
 u-boot-dlan17 (2026.04-2) unstable; urgency=medium
 
   [ Feng Zhang ]
