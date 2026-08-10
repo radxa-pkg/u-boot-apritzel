@@ -34,3 +34,5 @@ u-boot/0036-sunxi-a733-support-UFS-boot-in-SPL.patch
 u-boot/0037-arm-dts-sunxi-add-A733-boot-devices-to-SPL.patch
 u-boot/0038-configs-radxa-cubie-a7s-enable-UFS-boot-in-SPL.patch
 u-boot/0039-mmc-sunxi-fix-A733-SPL-SD-card-boot.patch
+u-boot/0040-support-auto-withstand-voltage-configure-for-A733-B-.patch
+u-boot/0041-fix-sunxi-guard-SoC-version-declarations-for-assembl.patch
