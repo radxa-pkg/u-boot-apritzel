@@ -1,0 +1,31 @@
+From 2ad295d59e6c1afee8edd2be06bce59cf2c82045 Mon Sep 17 00:00:00 2001
+From: Feng Zhang <feng@radxa.com>
+Date: Mon, 3 Aug 2026 17:21:51 +0800
+Subject: [PATCH 2/2] fix(sunxi): guard SoC version declarations for assembly
+
+Signed-off-by: Feng Zhang <feng@radxa.com>
+---
+ src/arch/arm/include/asm/arch-sunxi/cpu.h | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/src/arch/arm/include/asm/arch-sunxi/cpu.h b/src/arch/arm/include/asm/arch-sunxi/cpu.h
+index 2fc454f650f..c89945a4d58 100644
+--- a/src/arch/arm/include/asm/arch-sunxi/cpu.h
++++ b/src/arch/arm/include/asm/arch-sunxi/cpu.h
+@@ -22,6 +22,7 @@
+ #define SOCID_H5	0x1718
+ #define SOCID_R40	0x1701
+ 
++#ifndef __ASSEMBLY__
+ enum sunxi_soc_ver {
+ 	SUNXI_SOC_VER_INVALID = -1,
+ 	SUNXI_SOC_VER_A = 0,
+@@ -30,5 +31,6 @@ enum sunxi_soc_ver {
+ };
+ 
+ enum sunxi_soc_ver sunxi_get_soc_ver(void);
++#endif /* __ASSEMBLY__ */
+ 
+ #endif /* _SUNXI_CPU_H */
+-- 
+2.43.0
