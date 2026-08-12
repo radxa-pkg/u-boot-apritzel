@@ -1,7 +1,7 @@
 [submodule "src"]
 	path = src
-	url = https://github.com/dlan17/u-boot
-	branch = allwinner/A733/boot
+	url = https://github.com/radxa/u-boot.git
+	branch = u-boot-dlan17
 [submodule "tools"]
 	path = tools
 	url = https://gitlab.com/tina5.0_aiot/lichee/tools.git
